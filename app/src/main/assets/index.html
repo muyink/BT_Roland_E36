@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <meta name="theme-color" content="#151a22">
+    <title>Roland E-36 Control</title>
+    <style>
+        * {
+            box-sizing: border-box
+        }
+
+        :root {
+            --bg: #151a22;
+            --panel: #202733;
+            --line: #343e4d;
+            --text: #edf2f8;
+            --muted: #8e9bad;
+            --green: #69e0ad;
+            --orange: #ffc46b
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font: 14px Arial, sans-serif
+        }
+
+        button,
+        select,
+        input {
+            font: inherit
+        }
+
+        button {
+            cursor: pointer
+        }
+
+        .app {
+            min-height: 100dvh;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 7px
+        }
+
+        header {
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 5px;
+            position: relative
+        }
+
+        .brand {
+            font-weight: 800;
+            letter-spacing: 2px;
+            font-size: 24px
+        }
+
+        .brand span {
+            color: var(--green)
+        }
+
+        .badge {
+            font-size: 12px;
+            color: var(--muted);
+            letter-spacing: 1px
+        }
+
+        #soundTitle {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap
+        }
+
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px
+        }
+
+        .section {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 10px;
+            min-width: 0
+        }
+
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 9px
+        }
+
+        .section-title h2 {
+            font-size: 13px;
+            letter-spacing: 3px;
+            margin: 0;
+            text-align: center;
+            flex: 1
+        }
+
+        .lower h2 {
+            color: var(--orange)
+        }
+
+        .upper h2 {
+            color: var(--green)
+        }
+
+        .ch {
+            font-size: 10px;
+            color: var(--muted)
+        }
+
+        .current {
+            background: #111720;
+            border: 1px solid #303b49;
+            border-radius: 7px;
+            padding: 10px;
+            margin-bottom: 9px;
+            min-height: 65px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px
+        }
+
+        .current small {
+            display: block;
+            color: var(--muted);
+            font-size: 10px;
+            margin-bottom: 5px
+        }
+
+        .tone-name {
+            font-size: clamp(16px, 2.3vw, 25px);
+            font-weight: 700;
+            letter-spacing: 1px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap
+        }
+
+        .tone-no {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 5px
+        }
+
+        .note {
+            font-size: 10px;
+            color: var(--muted);
+            text-align: right
+        }
+
+        .presets {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 5px
+        }
+
+        .preset {
+            position: relative;
+            min-width: 0;
+            background: #293342;
+            border: 1px solid #3a4657;
+            border-radius: 7px;
+            color: var(--text);
+            padding: 8px 22px 8px 8px;
+            text-align: left;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            overflow: hidden
+        }
+
+        .preset.active.lower-p {
+            border-color: var(--orange);
+            background: #41382b
+        }
+
+        .preset.active.upper-p {
+            border-color: var(--green);
+            background: #243d37
+        }
+
+        .preset small {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 100%;
+            color: #b0bdcd;
+            font-size: 14px;
+            overflow: hidden
+        }
+
+        .preset small span:last-child {
+            font-size: 16px;
+            overflow-wrap: anywhere
+        }
+
+        .edit {
+            position: absolute;
+            right: 3px;
+            top: 3px;
+            border: 0;
+            background: transparent;
+            color: #aab8ca;
+            padding: 2px 3px;
+            font-size: 13px
+        }
+
+        .effects {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 9px;
+            margin-top: 40px;
+            padding-top: 12px;
+            border-top: 1px solid var(--line)
+        }
+
+        .lower .effects {
+            margin-top: 90px
+        }
+
+        .effect {
+            background: #191f29;
+            border: 1px solid #303b49;
+            border-radius: 7px;
+            padding: 7px
+        }
+
+        .lower .effect {
+            border-color: #594a36
+        }
+
+        .upper .effect {
+            border-color: #315345
+        }
+
+        .effect label {
+            display: flex;
+            justify-content: space-between;
+            gap: 4px;
+            font-size: 11px;
+            color: #b9c4d2;
+            margin-bottom: 6px
+        }
+
+        .effect output {
+            color: var(--text);
+            font-variant-numeric: tabular-nums
+        }
+
+        input[type=range] {
+            width: 100%;
+            height: 20px;
+            margin: 0;
+            accent-color: var(--green)
+        }
+
+        .lower input[type=range] {
+            accent-color: var(--orange)
+        }
+
+        footer {
+            margin-top: auto;
+            min-height: 31px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 9px;
+            background: #10151c;
+            border: 1px solid #2d3744;
+            border-radius: 7px
+        }
+
+        .status {
+            font-size: 10px;
+            color: var(--green);
+            white-space: nowrap
+        }
+
+        .ticker {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            color: #aeb9c8;
+            font-size: 11px;
+            white-space: nowrap
+        }
+
+        .clock {
+            font-size: 14px;
+            font-weight: bold;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap
+        }
+
+        dialog {
+            width: min(420px, 92vw);
+            max-height: 85vh;
+            overflow: auto;
+            background: #202733;
+            color: var(--text);
+            border: 1px solid #465366;
+            border-radius: 12px;
+            padding: 18px
+        }
+
+        dialog::backdrop {
+            background: #000b
+        }
+
+        dialog h3 {
+            margin: 0 0 14px
+        }
+
+        dialog label {
+            display: block;
+            font-size: 12px;
+            color: #b7c3d2;
+            margin: 10px 0 5px
+        }
+
+        dialog input,
+        dialog select {
+            width: 100%;
+            padding: 10px;
+            background: #121821;
+            color: white;
+            border: 1px solid #465366;
+            border-radius: 6px
+        }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 18px
+        }
+
+        .actions button {
+            border: 1px solid #465366;
+            background: #303b49;
+            color: white;
+            padding: 9px 14px;
+            border-radius: 6px
+        }
+
+        .actions .save {
+            background: var(--green);
+            color: #10251c;
+            border-color: var(--green);
+            font-weight: bold
+        }
+
+        #portrait {
+            display: none
+        }
+
+        @media(orientation:portrait) {
+            #portrait {
+                display: flex;
+                position: fixed;
+                inset: 0;
+                z-index: 5;
+                background: #151a22;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                padding: 25px
+            }
+
+            #portrait div {
+                max-width: 260px
+            }
+
+            #portrait strong {
+                display: block;
+                font-size: 20px;
+                margin: 15px 0 8px
+            }
+
+            #portrait p {
+                color: var(--muted);
+                line-height: 1.6
+            }
+        }
+
+        @media(max-height:430px) and (orientation:landscape) {
+            .app {
+                padding: 5px;
+                gap: 5px
+            }
+
+            header {
+                height: 25px
+            }
+
+            .section {
+                padding: 7px
+            }
+
+            .section-title {
+                margin-bottom: 6px
+            }
+
+            .current {
+                min-height: 52px;
+                padding: 6px 8px;
+                margin-bottom: 6px
+            }
+
+            .preset {
+                min-height: 41px;
+                padding: 6px 20px 6px 5px
+            }
+
+            footer {
+                min-height: 26px;
+                padding: 4px 7px
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div id="portrait">
+    <div>
+        <div style="font-size:42px">↻</div><strong>Putar HP ke Landscape</strong>
+        <p>Panel kontrol Roland E-36 dirancang untuk posisi mendatar.</p>
+    </div>
+</div>
+<div class="app">
+    <header>
+        <div class="badge">MIDI CONTROL PANEL</div>
+        <div class="brand" id="soundTitle">ROLAND <span>E-36</span></div>
+        <div class="badge">By : Tio - muyink@gmail.com</div>
+    </header>
+    <div class="main">
+        <section class="section lower">
+            <div class="section-title">
+                <h2>LOWER</h2><span class="ch">MIDI CH 2</span>
+            </div>
+            <div class="current">
+                <div style="min-width:0"><small>LOWER VOICE AKTIF</small>
+                    <div class="tone-name" id="lowerName">Grand Piano</div>
+                    <div class="tone-no" id="lowerNo">Tone 000</div>
+                </div>
+                <div class="note">LOWER<br>PART</div>
+            </div>
+            <div class="presets" id="lowerPresets"></div>
+            <div class="effects">
+                <div class="effect"><label>Reverb <output id="lrVal">40</output></label><input id="lr" type="range"
+                                                                                               min="0" max="127" value="40"></div>
+                <div class="effect"><label>Chorus <output id="lcVal">20</output></label><input id="lc" type="range"
+                                                                                               min="0" max="127" value="20"></div>
+            </div>
+        </section>
+        <section class="section upper">
+            <div class="section-title">
+                <h2>UPPER</h2><span class="ch">MIDI CH 1</span>
+            </div>
+            <div class="current">
+                <div style="min-width:0"><small>UPPER VOICE AKTIF</small>
+                    <div class="tone-name" id="upperName">Bright Piano</div>
+                    <div class="tone-no" id="upperNo">Tone 001</div>
+                </div>
+                <div class="note">UPPER<br>PART</div>
+            </div>
+            <div class="presets" id="upperPresets"></div>
+            <div class="effects">
+                <div class="effect"><label>Reverb <output id="urVal">45</output></label><input id="ur" type="range"
+                                                                                               min="0" max="127" value="45"></div>
+                <div class="effect"><label>Chorus <output id="ucVal">15</output></label><input id="uc" type="range"
+                                                                                               min="0" max="127" value="15"></div>
+            </div>
+        </section>
+    </div>
+    <footer><span class="status" id="status">● READY</span>
+        <div class="ticker" id="ticker">Roland E-36 • MIDI ready</div>
+        <div class="clock" id="clock">00:00:00</div>
+    </footer>
+</div>
+
+<dialog id="editor">
+    <h3>Edit <span id="editPart">UPPER</span> Preset <span id="editSlot">1</span></h3>
+    <label for="presetName">Nama preset</label><input id="presetName" maxlength="20" placeholder="Nama preset">
+    <label for="toneSelect">Pilih tone</label><select id="toneSelect"></select>
+    <div id="variationWrap">
+        <label for="variationSelect">Kode variasi</label><select id="variationSelect"></select>
+    </div>
+    <label for="volumeSelect">Volume preset <output id="volumeVal">100</output></label><input id="volumeSelect"
+                                                                                              type="range" min="0" max="127" value="100">
+    <label for="editReverb">Reverb <output id="editReverbVal">40</output></label><input id="editReverb" type="range"
+                                                                                        min="0" max="127" value="40">
+    <label for="editChorus">Chorus <output id="editChorusVal">20</output></label><input id="editChorus" type="range"
+                                                                                        min="0" max="127" value="20">
+    <div class="actions"><button type="button" id="cancel">Batal</button><button type="button" class="save"
+                                                                                 id="save">Simpan</button></div>
+</dialog>
+
+<script>
+    const tones = [
+        "Grand Piano", "Bright Piano", "Grand Piano", "Honky-tonk", "El. Piano-1", "El. Piano-2",
+        "Harpsichord", "Clavinet", "Celesta", "Glockenspiel", "Music Box", "Vibraphone", "Marimba",
+        "Xylophone", "Tubular Bells", "Dulcimer", "Drawbar Organ", "Percussive Organ", "Rock Organ",
+        "Church Organ", "Reed Organ", "Accordion", "Harmonica", "Bandoneon", "Nylon Guitar", "Steel Guitar",
+        "Jazz Guitar", "Clean Guitar", "Muted Guitar", "Overdriven Guitar", "Distortion Guitar",
+        "Guitar Harmonics", "Acoustic Bass", "Fingered Bass", "Picked Bass", "Fretless Bass", "Slap Bass-1",
+        "Slap Bass-2", "Synth Bass-1", "Synth Bass-2", "Violin", "Viola", "Cello", "Contrabass",
+        "Tremolo Strings", "Pizzicato Strings", "Orchestral Harp", "Timpani", "Strings", "String Ensemble",
+        "Synth Strings-1", "Synth Strings22", "Choir Aahs", "Voice Oohs", "Synth Vox", "Orchestra Hit",
+        "Trumpet", "Trombone", "Tuba", "Muted Trumpet", "French Horn", "Brass Section", "Synth Brass-1",
+        "Synth Brass-2", "Soprano Sax", "Alto Sax", "Tenor Sax", "Baritone Sax", "Oboe", "English Horn",
+        "Bassoon", "Clarinet", "Piccolo", "Flute", "Recorder", "Pan Flute", "Bottle Blow", "Shakuhachi",
+        "Whistle", "Ocarina", "Square Lead", "Sawtooth Lead", "Calliope Lead", "Chiffer Lead", "Charang",
+        "Voice", "Fifths", "Bass + Lead", "Pad New Age", "Pad Warm", "Pad Polysynth", "Pad Choir",
+        "Pad Bowed", "Pad Metallic", "Pad Halo", "Sweep", "SFX FX 1 (Rain)", "SFX FX 2 (Soundtrack)",
+        "SFX FX 3 (Crystal)", "SFX FX 4 (Atmosphere)", "SFX FX 5 (Brightness)", "SFX FX 6 (Goblins)",
+        "SFX FX 7 (Echoes)", "SFX FX 8 (Sci-Fi)", "Sitar", "Banjo", "Shamisen", "Koto", "Kalimba",
+        "Bagpipe", "Fiddle", "Shanai", "Tinkle Bell", "Agogo", "Steel Drums", "Woodblock", "Taiko Drum",
+        "Melodic Tom", "Synth Drum 808", "Reverse Cymbal", "Guitar Fret"
+    ];
+
+    // Kode bank variasi berdasarkan daftar tone
+    const variations = {
+        4: [1, 8], 5: [8, 16], 16: [8, 16, 32], 17: [16, 32], 19: [8, 16],
+        25: [8], 38: [1, 8], 39: [2, 4], 48: [8], 52: [32], 60: [8], 61: [8],
+        62: [8, 16], 63: [8, 16], 80: [8], 81: [8]
+    };
+
+    const data = {
+        lower: [
+            { name: "Grand Piano", tone: 0, variation: 0, volume: 100, reverb: 40, chorus: 20 },
+            { name: "Piano", tone: 0, variation: 0, volume: 100, reverb: 0, chorus: 0 },
+            { name: "Electric Piano", tone: 4, variation: 1, volume: 100, reverb: 35, chorus: 0 }
+        ],
+        upper: [
+            { name: "Kalimba", tone: 108, variation: 0, volume: 100, reverb: 10, chorus: 0 },
+            { name: "Vibraphone", tone: 11, variation: 0, volume: 100, reverb: 15, chorus: 0 },
+            { name: "Strings", tone: 48, variation: 8, volume: 100, reverb: 60, chorus: 35 },
+            { name: "Warm Pad", tone: 89, variation: 0, volume: 100, reverb: 70, chorus: 45 },
+            { name: "Flute", tone: 73, variation: 0, volume: 100, reverb: 40, chorus: 10 },
+            { name: "Trumpet", tone: 56, variation: 0, volume: 100, reverb: 35, chorus: 10 }
+        ]
+    };
+
+    let selected = { lower: 0, upper: 0 };
+    let edit = { part: "upper", slot: 0 };
+    const $ = id => document.getElementById(id);
+
+    function toneName(n) { // Ambil nama tone
+        return tones[n] || "Tone " + n;
+    }
+
+    async function sendMidi(type, ch, value, bank = 0) { // Kirim perintah MIDI ke Pico
+        try {
+            const r = await fetch(`/midi?type=${type}&ch=${ch}&value=${value}&bank=${bank}`);
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            $("status").textContent = "● MIDI DATA TERKIRIM";
+        } catch (e) {
+            $("status").textContent = "● CONNECTION ERROR";
+        }
+    }
+
+    function channel(part) { return part === "lower" ? 2 : 1; }
+
+    function sendPreset(part, p) { // Kirim semua pengaturan preset
+        const ch = channel(part);
+        sendMidi("tone", ch, p.tone, p.variation || 0);
+        sendMidi("volume", ch, p.volume ?? 100);
+        sendMidi("reverb", ch, p.reverb);
+        sendMidi("chorus", ch, p.chorus);
+    }
+
+    function showEffects(part, p) { // Pulihkan slider efek dari preset
+        const ids = part === "lower" ? ["lr", "lc"] : ["ur", "uc"];
+        $(ids[0]).value = p.reverb;
+        $(ids[1]).value = p.chorus;
+        $(ids[0] + "Val").textContent = p.reverb;
+        $(ids[1] + "Val").textContent = p.chorus;
+    }
+
+    function render(part) { // Gambar tombol preset
+        const root = $(part + "Presets");
+        root.innerHTML = "";
+        data[part].forEach((p, i) => {
+            const b = document.createElement("div");
+            b.className = "preset " + (part === "lower" ? "lower-p" : "upper-p") + (selected[part] === i ? " active" : "");
+            b.innerHTML = `<small><span>${String(p.tone).padStart(3, "0")}</span><span></span></small>`;
+            b.querySelector("small span:last-child").textContent = p.name || toneName(p.tone);
+            b.onclick = () => selectPreset(part, i);
+            const e = document.createElement("button");
+            e.className = "edit";
+            e.type = "button";
+            e.textContent = "✎";
+            e.title = "Edit preset";
+            e.onclick = ev => { ev.stopPropagation(); openEditor(part, i); };
+            b.appendChild(e);
+            root.appendChild(b);
+        });
+    }
+
+    function selectPreset(part, i) { // Pilih preset dan kirim semua nilainya
+        selected[part] = i;
+        const p = data[part][i];
+        [...$(part + "Presets").children].forEach((b, j) => b.classList.toggle("active", j === i));
+        $(part + "Name").textContent = toneName(p.tone);
+        $(part + "No").textContent = "Tone " + String(p.tone).padStart(3, "0") + (p.variation ? " · Var " + p.variation : "");
+        showEffects(part, p);
+        sendPreset(part, p);
+        $("status").textContent = "● " + part.toUpperCase() + " ACTIVE";
+        $("ticker").textContent = part.toUpperCase() + " : " + toneName(p.tone) + " · BANK " + (p.variation || 0) + " · VOL " + (p.volume ?? 100) + " · REV " + p.reverb + " · CHO " + p.chorus;
+    }
+
+    function updateVariationOptions(tone, selectedValue = 0) { // Tampilkan variasi sesuai tone
+        const list = variations[tone] || [];
+        const wrap = $("variationWrap");
+        const select = $("variationSelect");
+        select.innerHTML = "";
+        if (!list.length) {
+            select.innerHTML = '<option value="0">Normal (Bank 0)</option>';
+            select.value = "0";
+            wrap.style.display = "none";
+            return;
+        }
+        wrap.style.display = "block";
+        select.add(new Option("Normal (Bank 0)", "0"));
+        list.forEach(v => select.add(new Option("Variasi " + v + " (Bank " + v + ")", String(v))));
+        select.value = list.includes(Number(selectedValue)) ? String(selectedValue) : "0";
+    }
+
+    function openEditor(part, i) { // Buka editor preset
+        edit = { part, slot: i };
+        const p = data[part][i];
+        $("editPart").textContent = part.toUpperCase();
+        $("editSlot").textContent = i + 1;
+        $("presetName").value = p.name || toneName(p.tone);
+        $("toneSelect").value = String(p.tone);
+        updateVariationOptions(p.tone, p.variation || 0);
+        $("volumeSelect").value = p.volume ?? 100;
+        $("volumeVal").textContent = p.volume ?? 100;
+        $("editReverb").value = p.reverb;
+        $("editReverbVal").textContent = p.reverb;
+        $("editChorus").value = p.chorus;
+        $("editChorusVal").textContent = p.chorus;
+        $("editor").showModal();
+    }
+
+    $("toneSelect").innerHTML = tones.map((n, i) =>
+        `<option value="${i}">${String(i).padStart(3, "0")} - ${n}</option>`
+    ).join("");
+
+    $("toneSelect").addEventListener("change", () => updateVariationOptions(Number($("toneSelect").value), 0));
+    $("volumeSelect").addEventListener("input", () => $("volumeVal").textContent = $("volumeSelect").value);
+    $("editReverb").addEventListener("input", () => $("editReverbVal").textContent = $("editReverb").value);
+    $("editChorus").addEventListener("input", () => $("editChorusVal").textContent = $("editChorus").value);
+    $("cancel").onclick = () => $("editor").close();
+
+    $("save").onclick = () => { // Simpan data preset dan langsung kirim
+        const p = data[edit.part][edit.slot];
+        p.tone = Number($("toneSelect").value);
+        p.name = $("presetName").value.trim() || toneName(p.tone);
+        p.variation = Number($("variationSelect").value) || 0;
+        p.volume = Number($("volumeSelect").value);
+        p.reverb = Number($("editReverb").value);
+        p.chorus = Number($("editChorus").value);
+        $("editor").close();
+        render(edit.part);
+        selectPreset(edit.part, edit.slot);
+    };
+
+    [
+        { id: "lr", part: "lower", key: "reverb", type: "reverb" },
+        { id: "lc", part: "lower", key: "chorus", type: "chorus" },
+        { id: "ur", part: "upper", key: "reverb", type: "reverb" },
+        { id: "uc", part: "upper", key: "chorus", type: "chorus" }
+    ].forEach(e => {
+        $(e.id).addEventListener("input", () => {
+            const val = Number($(e.id).value);
+            const p = data[e.part][selected[e.part]];
+            p[e.key] = val;
+            $(e.id + "Val").textContent = val;
+            sendMidi(e.type, channel(e.part), val);
+            $("ticker").textContent = e.part.toUpperCase() + " " + e.type.toUpperCase() + " : " + val;
+        });
+    });
+
+    function clock() { // Tampilkan jam
+        $("clock").textContent = new Date().toLocaleTimeString("id-ID", { hour12: false });
+    }
+
+    render("lower");
+    render("upper");
+    selectPreset("lower", 0);
+    selectPreset("upper", 0);
+    clock();
+    setInterval(clock, 1000);
+</script>
+</body>
+
+</html>
